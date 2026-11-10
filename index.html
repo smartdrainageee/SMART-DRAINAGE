@@ -1914,6 +1914,53 @@ background:repeating-linear-gradient(90deg,transparent 0,transparent calc(12.5% 
   </nav>
 </header>
 
+<style id="hb-celular">
+/* menu no celular: tela cheia, escura, com os grupos abertos e links grandes (no lugar da caixinha translúcida) */
+@media (max-width:900px){
+  .hb.mob-aberto .hb-barra{backdrop-filter:none;-webkit-backdrop-filter:none;background:#0b0b0a;border-color:rgba(255,255,255,.12);position:relative;z-index:2}
+  .hb .hb-links{display:none}
+  .hb.mob-aberto .hb-links{display:flex!important;position:fixed!important;inset:0!important;z-index:1;flex-direction:column!important;align-items:stretch!important;gap:0!important;
+    margin:0!important;padding:96px 24px calc(40px + env(safe-area-inset-bottom))!important;overflow-y:auto;overscroll-behavior:contain;pointer-events:auto;
+    width:auto!important;max-height:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;transform:none!important;opacity:1!important;visibility:visible!important;
+    background:radial-gradient(120% 60% at 100% 0%,rgba(255,106,19,.14),rgba(255,106,19,0) 60%),radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.2px) 0 0/22px 22px,#0b0b0a!important;
+    animation:hbEntra .35s cubic-bezier(.2,.8,.2,1)}
+  @keyframes hbEntra{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+  .hb.mob-aberto .hb-item{position:static!important;width:100%;padding:18px 0 14px;border-bottom:1px solid rgba(255,255,255,.08);
+    opacity:0;animation:hbItem .45s cubic-bezier(.2,.8,.2,1) forwards}
+  .hb.mob-aberto .hb-item:nth-child(1){animation-delay:.04s}.hb.mob-aberto .hb-item:nth-child(2){animation-delay:.09s}
+  .hb.mob-aberto .hb-item:nth-child(3){animation-delay:.14s}.hb.mob-aberto .hb-item:nth-child(4){animation-delay:.19s}
+  @keyframes hbItem{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  /* título do grupo: pequeno, em laranja, sem seta (o grupo já fica aberto) */
+  .hb.mob-aberto .hb-drop>.hb-link{all:unset;display:flex;align-items:center;gap:10px;margin-bottom:8px;font-family:'Courier New',ui-monospace,monospace;font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:#FF6A13;pointer-events:none}
+  .hb.mob-aberto .hb-drop>.hb-link::before{content:'';width:18px;height:1px;background:#FF6A13}
+  .hb.mob-aberto .hb-drop>.hb-link .hb-seta,.hb.mob-aberto .hb-drop>.hb-link::after{display:none!important}
+  .hb.mob-aberto .hb-painel{position:static!important;display:flex!important;flex-direction:column;gap:2px;min-width:0!important;width:auto!important;padding:0!important;margin:0!important;
+    background:none!important;border:0!important;box-shadow:none!important;opacity:1!important;visibility:visible!important;transform:none!important;transition:none!important}
+  .hb.mob-aberto .hb-painel a{display:flex!important;flex-direction:column;align-items:flex-start;gap:5px;padding:10px 0!important;border-radius:0!important;background:none!important;text-decoration:none}
+  .hb.mob-aberto .hb-painel a b{font-family:'Highrise','Anton',Impact,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(24px,6.8vw,30px);line-height:1;letter-spacing:.02em;word-spacing:.1em;color:#ece6da}
+  .hb.mob-aberto .hb-painel a span{display:block;font-size:12.5px;line-height:1.3;color:#8d887f}
+  .hb.mob-aberto .hb-painel a:active b{color:#FF6A13}
+  /* Viabilidade: link sozinho, no mesmo estilo dos outros */
+  .hb.mob-aberto .hb-item:not(.hb-drop)>.hb-link{all:unset;display:block;cursor:pointer;font-family:'Highrise','Anton',Impact,sans-serif;font-weight:700;text-transform:uppercase;
+    font-size:clamp(26px,7.4vw,34px);line-height:1;letter-spacing:.02em;color:#ece6da;padding:6px 0}
+  .hb.mob-aberto .hb-item:not(.hb-drop)>.hb-link::before{content:'Viabilidade';display:none}
+  .hb.mob-aberto .hb-item:not(.hb-drop)>.hb-link::after{display:none!important}
+  /* grupo da dobra atual ganha um ponto laranja */
+  .hb.mob-aberto .hb-link.ativo::after{display:none!important}
+  .hb.mob-aberto .hb-logo,.hb.mob-aberto .hb-cta,.hb.mob-aberto .hb-menu{position:relative;z-index:3}
+  .hb.mob-aberto::before{content:'';position:fixed;inset:0;z-index:-1;background:#0b0b0a}
+  .hb.mob-aberto .hb-links{-webkit-mask-image:linear-gradient(transparent 0,transparent 72px,#000 104px);mask-image:linear-gradient(transparent 0,transparent 72px,#000 104px)}
+  html.hb-trava,html.hb-trava body{overflow:hidden!important}
+}
+</style>
+<script>
+/* menu do celular aberto: a página atrás não rola */
+(function(){
+  var hb=document.getElementById('hub'); if(!hb) return;
+  new MutationObserver(function(){ document.documentElement.classList.toggle('hb-trava', hb.classList.contains('mob-aberto')); }).observe(hb,{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
 <!-- ================= DOBRA 2: enchente ================= -->
 <section class="cl" id="enchente">
   <!-- parede de concreto -->
