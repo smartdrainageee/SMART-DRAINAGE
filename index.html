@@ -1694,12 +1694,19 @@ background:repeating-linear-gradient(90deg,transparent 0,transparent calc(12.5% 
     transition:opacity .7s cubic-bezier(.2,.8,.2,1) calc(var(--d)*1s),transform .9s cubic-bezier(.2,1.5,.35,1) calc(var(--d)*1s),filter .7s ease calc(var(--d)*1s)}
 
   @media (max-width:900px){
-    .sd-stage{grid-template-columns:1fr;align-items:end}
-    .sd-shade{background:linear-gradient(0deg,#0b0b0a 0%,rgba(11,11,10,.96) 46%,rgba(11,11,10,.7) 56%,rgba(11,11,10,0) 70%)}
-    .sd-hint{right:auto;left:50%;transform:translateX(-50%);top:70px;padding:9px 14px;font-size:10px}
-    .sd-txt{transform-origin:left bottom}
-    .sd-txt{padding:0 20px}
-    .sd h2{font-size:clamp(30px,8.6vw,48px)}
+    /* celular: a rua 3D ocupa a parte de cima; o texto vem embaixo, no tamanho normal (a dobra pode passar de uma tela) */
+    .sd{height:auto;min-height:0}
+    .sd-stage{position:relative;height:auto;min-height:0;display:flex;flex-direction:column;align-items:stretch;padding:0 0 48px}
+    .sd-3d{order:-1}
+    .sd-3d{position:relative;inset:auto;height:56svh;height:56vh;min-height:300px}
+    .sd-shade{inset:auto 0 auto 0;top:0;height:56svh;height:56vh;min-height:300px;
+      background:linear-gradient(0deg,#0b0b0a 0%,rgba(11,11,10,.55) 18%,rgba(11,11,10,0) 38%),linear-gradient(#0b0b0a 0%,rgba(11,11,10,0) 22%)}
+    .sd-hint{right:auto;left:50%;transform:translateX(-50%);top:auto;bottom:14px;padding:8px 14px;font-size:10px;letter-spacing:.12em}
+    .sd-txt{transform:none !important;padding:0 20px;margin-top:10px}
+    .sd h2{font-size:clamp(34px,10vw,52px)}
+    .sd-lead{font-size:15px}
+    .sd-t{font-size:22px}
+    .sd-d{font-size:14px}
   }
   @media (prefers-reduced-motion:reduce){
     .sd [data-d]{opacity:1 !important;transform:none !important;filter:none !important;pointer-events:auto !important;transition:none !important}
@@ -1861,8 +1868,20 @@ background:repeating-linear-gradient(90deg,transparent 0,transparent calc(12.5% 
     .cf-chip span{display:none}
     .cf-chip{padding:0 12px}
     .cf-hs .t{font-size:10px}
-    .cf-title p{font-size:15px;margin-top:10px}
+    .cf-title p{font-size:14px;line-height:1.5;margin-top:10px}
     .cf-sub{margin-top:10px}
+    /* celular: menos informação na tela. Texto em cima, sobre um fundo escuro; o modelo 3D fica embaixo, sem etiquetas */
+    .cf-hs{display:none !important}
+    .cf-bgword{display:none}
+    .cf-stage::after{content:"";position:absolute;left:0;right:0;top:0;height:54%;z-index:1;pointer-events:none;
+      background:linear-gradient(#0b0b0a 0%,rgba(11,11,10,.95) 58%,rgba(11,11,10,0) 100%);transition:opacity .6s}
+    .cf-stage.cine::after{opacity:0}
+    .cf-titles{z-index:2}
+    .cf-chips{flex-wrap:nowrap;gap:5px;padding:0 10px}
+    .cf-chip{padding:0 9px;min-height:30px}
+    .cf-scroll{display:none}
+    .cf-pill{margin-top:16px}
+    .cf-final p{font-size:14px}
   }
   @media (prefers-reduced-motion:reduce){
     .cf-title,.cf-final,.cf-bgword span{transition:opacity .2s}
@@ -2600,7 +2619,7 @@ window.GL_FOTOS=["assets/e06119aca9.webp", "assets/8b417861e3.webp", "assets/836
     var items=[].slice.call(txt.querySelectorAll('.sd-item')), was=items.map(function(li){return li.classList.contains('on')});
     items.forEach(function(li){li.classList.remove('on')}); items[1].classList.add('on');
     var cs=getComputedStyle(sec), avail=sec.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
-    if(innerWidth<=900) avail=sec.clientHeight*.6-parseFloat(cs.paddingBottom)-8;
+    if(innerWidth<=900){ items.forEach(function(li,i){ li.classList.toggle('on', was[i]); }); return; }   // no celular o texto não é reduzido
     var h=txt.scrollHeight, k=Math.min(1, avail/h);
     items.forEach(function(li,i){ li.classList.toggle('on', was[i]); });
     if(k<1) txt.style.transform='scale('+k.toFixed(3)+')';
@@ -2770,10 +2789,11 @@ const mobile = () => canvas.clientWidth < 900;
 function resize(){
   const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
   renderer.setSize(w, h, false); camera.aspect = w/h;
-  if (mobile()) camera.setViewOffset(w, h, 0, h*.29, w, h); else camera.setViewOffset(w, h, -w*.19, 0, w, h);
+  if (mobile()) camera.setViewOffset(w, h, 0, -h*.04, w, h); else camera.setViewOffset(w, h, -w*.19, 0, w, h);
   camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();
+if ('ResizeObserver' in window) new ResizeObserver(resize).observe(canvas);   // o tamanho da tela 3D muda com o layout (ex.: celular)
 
 const clock = new THREE.Clock(); let lastT = 0;
 const vT = new THREE.Vector3(), vP = new THREE.Vector3();
@@ -2784,7 +2804,7 @@ renderer.setAnimationLoop(() => {
     az += vAz * dt; vAz *= Math.pow(.04, dt);                                        // inércia: desacelera em ~1 s
     if (Math.abs(vAz) < .02 && !reduce && performance.now() - lastTouch > 4000) az += dt * .1;   // giro automático
   }
-  const fit = mobile() ? 1.5 : 1, d = VIEW.d * fit, ph = THREE.MathUtils.degToRad(pitch);
+  const fit = mobile() ? 1.08 : 1, d = VIEW.d * fit, ph = THREE.MathUtils.degToRad(pitch);
   vT.set(...VIEW.t);
   vP.set(vT.x + d*Math.cos(ph)*Math.sin(az), vT.y + d*Math.sin(ph), vT.z + d*Math.cos(ph)*Math.cos(az));
   bueiro.localToWorld(vT); bueiro.localToWorld(vP);
@@ -3670,13 +3690,17 @@ function start(){
     setStage(Math.min(FINAL, frac > 0.65 ? i+1 : i));
 
     // câmera
-    const portrait = camera.aspect < 0.9, distK = portrait ? 1.75 : (camera.aspect < 1.3 ? 1.5 : 1.1);
+    const portrait = camera.aspect < 0.9, distK = portrait ? 2.1 : (camera.aspect < 1.3 ? 1.5 : 1.1);
     wantTgt.copy(W(A.tgt)).lerp(W(B.tgt), t);
     wantPos.copy(W(A.cam)).lerp(W(B.cam), t).sub(wantTgt).multiplyScalar(distK).add(wantTgt);
-    if (portrait) wantTgt.y -= 0.25;
     if (first){ camPos.copy(wantPos); camTgt.copy(wantTgt); first = false; }
     const cl = 1 - Math.exp(-dt * 3.2); camPos.lerp(wantPos, cl); camTgt.lerp(wantTgt, cl);
     camera.position.copy(camPos); camera.lookAt(camTgt);
+    // celular em pé: o modelo desce para a metade de baixo (o texto fica em cima); na cena da rua ele sobe (o texto fica embaixo)
+    if (portrait){
+      const st = ((A.street||0)*(1-t) + (B.street||0)*t), oy = (-0.17*(1 - st) + 0.1*st) * canvas.clientHeight;
+      if (Math.abs(oy - (camera.view ? camera.view.offsetY : 0)) > .5){ camera.setViewOffset(canvas.clientWidth, canvas.clientHeight, 0, oy, canvas.clientWidth, canvas.clientHeight); camera.updateProjectionMatrix(); }
+    }
 
     // giro suave na abertura
     const idle = (A.idle||0)*(1-t) + (B.idle||0)*t;
@@ -4369,7 +4393,9 @@ setInterval(()=&gt;$(&#x27;#pb&#x27;).classList.contains(&#x27;o&#x27;)&amp;&amp
 &lt;/html&gt;
 "></iframe>
   </div>
+  <button class="ap-fechar" type="button" aria-label="Fechar o app em tela cheia">×</button>
   </div>
+  <button class="ap-cheia" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Abrir o app em tela cheia</button>
   <ul class="ap-dicas" aria-label="O que você pode fazer no app">
     <li><b>Clique</b> em um bueiro do mapa para ver os dados</li>
     <li><b>Abra o menu</b> para ver estatísticas e bateria</li>
@@ -4580,6 +4606,53 @@ setInterval(()=&gt;$(&#x27;#pb&#x27;).classList.contains(&#x27;o&#x27;)&amp;&amp
 </section>
 
 
+
+<style id="ap-celular">
+  /* celular: o app (feito na horizontal) abre em tela cheia, deitado, para dar para usar de verdade */
+  .ap-cheia,.ap-fechar{display:none}
+  @media (max-width:760px){
+    .ap-cheia{display:inline-flex;align-items:center;gap:10px;margin-top:4px;min-height:46px;padding:0 20px;border:0;border-radius:999px;background:#b8e600;color:#0b0b0a;
+      font:700 14px/1 'Liberation Sans',Arial,sans-serif;letter-spacing:.02em;cursor:pointer;box-shadow:0 8px 28px rgba(184,230,0,.25)}
+    .ap-cheia svg{width:18px;height:18px;fill:none;stroke:#0b0b0a;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+    .ap-dicas{display:none}
+  }
+  html.ap-modo-cheio,html.ap-modo-cheio body{overflow:hidden!important}
+  .ap-veu{position:fixed;inset:0;z-index:9998;background:#000}
+  .ap-moldura.cheio{position:fixed!important;left:50%;top:50%;z-index:9999;margin:0;border-radius:0;transform-origin:center center}
+  .ap-moldura.cheio::before,.ap-moldura.cheio::after{display:none}
+  .ap-moldura.cheio .ap-tela{width:100%!important;height:100%!important;aspect-ratio:auto;border-radius:0}
+  .ap-moldura.cheio .ap-fechar{display:grid;place-items:center;position:absolute;right:10px;top:10px;z-index:3;width:40px;height:40px;border-radius:50%;border:0;
+    background:rgba(0,0,0,.75);color:#fff;font:400 26px/1 Arial,sans-serif;cursor:pointer;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
+</style>
+<script>
+(function(){
+  var sec=document.getElementById('app-monitoramento'); if(!sec) return;
+  var mold=sec.querySelector('.ap-moldura'), abrir=sec.querySelector('.ap-cheia'), fechar=sec.querySelector('.ap-fechar'), veu=null, aberto=false, lugar=null;
+  function encaixa(){
+    if(!aberto) return;
+    var W=innerWidth, H=innerHeight, deitar=H>W;
+    mold.style.width=(deitar?H:W)+'px'; mold.style.height=(deitar?W:H)+'px';
+    mold.style.transform='translate(-50%,-50%)'+(deitar?' rotate(90deg)':'');
+  }
+  function abre(){
+    aberto=true; veu=document.createElement('div'); veu.className='ap-veu'; document.body.appendChild(veu);
+    // o app sai da dobra e vai para o topo da página (dentro da dobra ele ficaria preso atrás do fundo preto)
+    lugar=document.createComment('app'); mold.parentNode.insertBefore(lugar, mold); document.body.appendChild(mold);
+    document.documentElement.classList.add('ap-modo-cheio'); mold.classList.add('cheio'); encaixa();
+    var d=document.documentElement; if(d.requestFullscreen){ d.requestFullscreen().then(function(){ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape').catch(function(){}); }).catch(function(){}); }
+  }
+  function fecha(){
+    aberto=false; mold.classList.remove('cheio'); mold.style.width=mold.style.height=mold.style.transform='';
+    if(lugar){ lugar.parentNode.insertBefore(mold, lugar); lugar.remove(); lugar=null; }
+    document.documentElement.classList.remove('ap-modo-cheio'); if(veu){ veu.remove(); veu=null; }
+    if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(function(){});
+  }
+  abrir.addEventListener('click',abre); fechar.addEventListener('click',fecha);
+  addEventListener('resize',encaixa); addEventListener('orientationchange',function(){ setTimeout(encaixa,250); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&aberto) fecha(); });
+  document.addEventListener('fullscreenchange',function(){ setTimeout(encaixa,100); });
+})();
+</script>
 
 <!-- ================= PITCH: vídeo do projeto (YouTube, carrega só no clique) ================= -->
 <section class="pv" id="pitch" aria-labelledby="pv-h">
