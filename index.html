@@ -1918,6 +1918,10 @@ background:repeating-linear-gradient(90deg,transparent 0,transparent calc(12.5% 
 /* menu no celular: tela cheia, escura, com os grupos abertos e links grandes (no lugar da caixinha translúcida) */
 @media (max-width:900px){
   .hb.mob-aberto .hb-barra{backdrop-filter:none;-webkit-backdrop-filter:none;background:#0b0b0a;border-color:rgba(255,255,255,.12);position:relative;z-index:2}
+  /* barra fechada: só o tamanho do conteúdo (logo, Testar o app e menu), sem espaço vazio no meio */
+  .hb .hb-barra{width:auto!important;max-width:none!important;flex-wrap:nowrap!important;gap:6px}
+  .hb .hb-logo{margin-right:0}
+  .hb .hb-cta{margin-left:0!important}
   .hb .hb-links{display:none}
   .hb.mob-aberto .hb-links{display:flex!important;position:fixed!important;inset:0!important;z-index:1;flex-direction:column!important;align-items:stretch!important;gap:0!important;
     margin:0!important;padding:96px 24px calc(40px + env(safe-area-inset-bottom))!important;overflow-y:auto;overscroll-behavior:contain;pointer-events:auto;
