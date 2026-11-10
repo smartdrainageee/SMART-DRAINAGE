@@ -1873,9 +1873,9 @@ background:repeating-linear-gradient(90deg,transparent 0,transparent calc(12.5% 
     /* celular: menos informação na tela. Texto em cima, sobre um fundo escuro; o modelo 3D fica embaixo, sem etiquetas */
     .cf-hs{display:none !important}
     .cf-bgword{display:none}
-    .cf-stage::after{content:"";position:absolute;left:0;right:0;top:0;height:54%;z-index:1;pointer-events:none;
+    .cf-stage::after{content:"";position:absolute;left:0;right:0;top:0;height:calc(var(--cf-tb,50%) + 30px);z-index:1;pointer-events:none;
       background:linear-gradient(#0b0b0a 0%,rgba(11,11,10,.95) 58%,rgba(11,11,10,0) 100%);transition:opacity .6s}
-    .cf-stage.cine::after{opacity:0}
+    .cf-stage.cine::after{top:auto;bottom:0;height:52%;background:linear-gradient(0deg,#0b0b0a 0%,rgba(11,11,10,.9) 55%,rgba(11,11,10,0) 100%)}
     .cf-titles{z-index:2}
     .cf-chips{flex-wrap:nowrap;gap:5px;padding:0 10px}
     .cf-chip{padding:0 9px;min-height:30px}
@@ -3636,6 +3636,7 @@ function addAlca(lid){
 }
 
 /* ---------- loop ---------- */
+const mobFit = { c: 0, r: 0 };
 const camPos = new THREE.Vector3(), camTgt = new THREE.Vector3(), wantPos = new THREE.Vector3(), wantTgt = new THREE.Vector3();
 let first = true, smoothF = 0;
 const hsEls = [...document.querySelectorAll('.cf-hs')], fill = document.getElementById('cf-fill'), dot = document.getElementById('cf-dot');
@@ -3698,8 +3699,20 @@ function start(){
     camera.position.copy(camPos); camera.lookAt(camTgt);
     // celular em pé: o modelo desce para a metade de baixo (o texto fica em cima); na cena da rua ele sobe (o texto fica embaixo)
     if (portrait){
-      const st = ((A.street||0)*(1-t) + (B.street||0)*t), oy = (-0.17*(1 - st) + 0.1*st) * canvas.clientHeight;
-      if (Math.abs(oy - (camera.view ? camera.view.offsetY : 0)) > .5){ camera.setViewOffset(canvas.clientWidth, canvas.clientHeight, 0, oy, canvas.clientWidth, canvas.clientHeight); camera.updateProjectionMatrix(); }
+      // o modelo ocupa só o espaço livre entre o fim do texto e as etapas (nunca fica embaixo do texto)
+      const ch = canvas.clientHeight, cr = canvas.getBoundingClientRect();
+      const tEl = stageEl.querySelector('.cf-title.on'), chips = document.getElementById('cf-chips');
+      const st = ((A.street||0)*(1-t) + (B.street||0)*t);
+      let top = tEl ? tEl.getBoundingClientRect().bottom - cr.top + 14 : ch*.45, bot = chips ? chips.getBoundingClientRect().top - cr.top - 10 : ch - 70;
+      if (st > .5){ top = 64; bot = ch*.52; }                                   // cena da rua: texto embaixo, modelo em cima
+      top = Math.min(top, ch - 220); const reg = Math.max(180, bot - top);
+      if (!mobFit.r){ mobFit.c = top + reg/2; mobFit.r = reg; }
+      mobFit.c += ((top + reg/2) - mobFit.c) * Math.min(1, dt*6); mobFit.r += (reg - mobFit.r) * Math.min(1, dt*6);
+      const oy = ch/2 - mobFit.c;
+      if (Math.abs(oy - (camera.view ? camera.view.offsetY : 0)) > .5){ camera.setViewOffset(canvas.clientWidth, ch, 0, oy, canvas.clientWidth, ch); camera.updateProjectionMatrix(); }
+      stageEl.style.setProperty('--cf-tb', Math.round(top) + 'px');
+      // afasta a câmera quando o espaço livre é pequeno (o modelo encolhe para caber)
+      camera.position.sub(camTgt).multiplyScalar(Math.min(2.1, Math.max(1, 1.12 * (ch*.46) / mobFit.r))).add(camTgt); camera.lookAt(camTgt);
     }
 
     // giro suave na abertura
@@ -4029,7 +4042,6 @@ function start(){
   </div>
   </div>
 </section>
-
 <script>
 (function(){
   var sec=document.getElementById('tecnologia'),janela=document.getElementById('tcJanela'),linha=document.getElementById('tcLinha');if(!linha)return;
@@ -4549,6 +4561,57 @@ setInterval(()=&gt;$(&#x27;#pb&#x27;).classList.contains(&#x27;o&#x27;)&amp;&amp
     </div>
   </div>
 </section>
+<style id="cp-celular">
+  /* celular: em vez de uma tabela comprida, um cartão por critério, passando para o lado */
+  .cp-nav{display:none}
+  @media (max-width:760px){
+    #comparativo .cp-topo,#comparativo .cp-destaque{display:none!important}
+    #comparativo .cp-tab{display:flex!important;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+      margin:28px -20px 0;padding:4px 20px 8px;background:none!important;border:0!important}
+    #comparativo .cp-tab::-webkit-scrollbar{display:none}
+    #comparativo .cp-linha{flex:0 0 86%;scroll-snap-align:center;display:flex!important;flex-direction:column;gap:10px;padding:20px 18px!important;margin:0!important;
+      border:1px solid rgba(255,255,255,.1)!important;border-radius:18px;background:linear-gradient(160deg,#151413,#0d0c0b)!important;min-height:0}
+    #comparativo .cp-crit{display:flex;align-items:baseline;gap:10px;font-size:26px!important;line-height:1;padding:0!important;margin:0 0 4px!important;border:0!important}
+    #comparativo .cp-crit .cp-n{font-size:12px}
+    #comparativo .cp-cel{display:grid!important;grid-template-columns:28px 1fr;gap:4px 10px;align-items:start;padding:12px 14px!important;margin:0!important;border-radius:12px;border:0!important}
+    #comparativo .cp-cel::before{grid-column:1/-1;font-family:'Courier New',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase}
+    #comparativo .cp-ruim{background:rgba(255,255,255,.035)!important}
+    #comparativo .cp-ruim::before{content:'Bueiro tradicional';color:#8d887f}
+    #comparativo .cp-bom{background:rgba(255,106,19,.10)!important;box-shadow:inset 0 0 0 1px rgba(255,106,19,.45)}
+    #comparativo .cp-bom::before{content:'Smart Drainage';color:#FF6A13}
+    #comparativo .cp-cel p{margin:0!important;font-size:14.5px!important;line-height:1.45}
+    #comparativo .cp-ruim p{color:#9a948a!important}
+    #comparativo .cp-bom p{color:#ece6da!important}
+    .cp-nav{display:flex;align-items:center;gap:14px;margin:16px 0 0}
+    .cp-nav button{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#ece6da;font:400 18px/1 Arial,sans-serif;cursor:pointer}
+    .cp-nav button:disabled{opacity:.3}
+    .cp-nav .cp-trilho{flex:1;height:2px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}
+    .cp-nav .cp-trilho i{display:block;height:100%;width:11%;background:#FF6A13;transition:width .3s}
+    .cp-nav .cp-cont{font-family:'Courier New',monospace;font-size:12px;letter-spacing:.12em;color:#9a948a;min-width:52px;text-align:right}
+    #comparativo .cp-placar{margin-top:26px!important}
+  }
+</style>
+<script>
+/* comparativo no celular: setas, contador e barra acompanham o cartão que está na tela */
+(function(){
+  var tab=document.getElementById('cpTab'); if(!tab) return;
+  var nav=document.createElement('div'); nav.className='cp-nav';
+  nav.innerHTML='<button type="button" aria-label="Critério anterior">‹</button><span class="cp-trilho"><i></i></span><span class="cp-cont">01 / 09</span><button type="button" aria-label="Próximo critério">›</button>';
+  tab.parentNode.insertBefore(nav, tab.nextSibling);
+  var linhas=[].slice.call(tab.querySelectorAll('.cp-linha')), b=nav.querySelectorAll('button'), barra=nav.querySelector('i'), cont=nav.querySelector('.cp-cont'), n=linhas.length, atual=0;
+  function pad(x){ return (x<10?'0':'')+x; }
+  function upd(){
+    var meio=tab.scrollLeft+tab.clientWidth/2, best=0, dist=1e9;
+    linhas.forEach(function(l,i){ var c=l.offsetLeft+l.offsetWidth/2, d=Math.abs(c-meio); if(d<dist){ dist=d; best=i; } });
+    atual=best; cont.textContent=pad(best+1)+' / '+pad(n); barra.style.width=((best+1)/n*100)+'%';
+    b[0].disabled=best===0; b[1].disabled=best===n-1;
+  }
+  function vai(i){ var l=linhas[Math.max(0,Math.min(n-1,i))]; tab.scrollTo({left:l.offsetLeft-(tab.clientWidth-l.offsetWidth)/2,behavior:'smooth'}); }
+  b[0].addEventListener('click',function(){ vai(atual-1); }); b[1].addEventListener('click',function(){ vai(atual+1); });
+  tab.addEventListener('scroll',function(){ requestAnimationFrame(upd); },{passive:true}); addEventListener('resize',upd); upd();
+})();
+</script>
+
 
 <script>
 (function(){
