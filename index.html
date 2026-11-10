@@ -1871,11 +1871,13 @@ background:repeating-linear-gradient(90deg,transparent 0,transparent calc(12.5% 
     .cf-title p{font-size:14px;line-height:1.5;margin-top:10px}
     .cf-sub{margin-top:10px}
     /* celular: menos informação na tela. Texto em cima, sobre um fundo escuro; o modelo 3D fica embaixo, sem etiquetas */
+    .cf{height:820vh;height:820svh}
+    .cf-bar{display:none}
     .cf-hs{display:none !important}
     .cf-bgword{display:none}
     .cf-stage::after{content:"";position:absolute;left:0;right:0;top:0;height:calc(var(--cf-tb,50%) + 30px);z-index:1;pointer-events:none;
       background:linear-gradient(#0b0b0a 0%,rgba(11,11,10,.95) 58%,rgba(11,11,10,0) 100%);transition:opacity .6s}
-    .cf-stage.cine::after{top:auto;bottom:0;height:52%;background:linear-gradient(0deg,#0b0b0a 0%,rgba(11,11,10,.9) 55%,rgba(11,11,10,0) 100%)}
+    .cf-stage.cine::after{top:auto;bottom:0;height:48%;background:linear-gradient(0deg,#0b0b0a 0%,rgba(11,11,10,.9) 55%,rgba(11,11,10,0) 100%)}
     .cf-titles{z-index:2}
     .cf-chips{flex-wrap:nowrap;gap:5px;padding:0 10px}
     .cf-chip{padding:0 9px;min-height:30px}
@@ -2571,7 +2573,7 @@ window.GL_FOTOS=["assets/e06119aca9.webp", "assets/8b417861e3.webp", "assets/836
   <div class="sd-txt">
     <div class="sd-eyebrow" data-d style="--d:.22">A solução</div>
     <h2 id="sd-h" data-d style="--d:.28"><span class="l1">Por isso criamos o</span> <em class="hand">Smart Drainage</em></h2>
-    <p class="sd-lead" data-d style="--d:.42">O bueiro comum engole o lixo da rua até entupir, e a chuva seguinte vira alagamento. O <strong>Smart Drainage</strong> segura o lixo <strong>antes que ele chegue à rede</strong>, deixa a água passar e <strong>avisa a limpeza antes de entupir</strong>.</p>
+    <p class="sd-lead" data-d style="--d:.42">No bueiro comum, o lixo da rua desce junto com a água e entope a tubulação, e na chuva seguinte a rua alaga. O <strong>Smart Drainage</strong> retém o lixo <strong>antes que ele chegue à rede</strong>, deixa a água passar e <strong>avisa a equipe de limpeza antes de entupir</strong>.</p>
 
     <ol class="sd-list" aria-label="Diferenciais do Smart Drainage">
       <li class="sd-item" data-f="0" data-d style="--d:.52"><button type="button"><span class="sd-n">01</span><span class="sd-t">Retém os resíduos</span><span class="sd-d">Garrafas, sacolas e folhas ficam presas na grade inteligente e não chegam a entupir a rede de drenagem.</span></button><b class="sd-bar"></b></li>
@@ -3025,7 +3027,8 @@ const ease = t => t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
 
 /* ---------- three.js ---------- */
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const PHONE = matchMedia('(max-width:760px)').matches;
+renderer.setPixelRatio(Math.min(devicePixelRatio, PHONE ? 1.5 : 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -3036,7 +3039,7 @@ scene.fog = new THREE.Fog(0x0b0b0a, 13, 30);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
 const key = new THREE.DirectionalLight(0xfff1dc, 2.4); key.position.set(3.5,9,4.5); scene.add(key);
-key.castShadow = true; key.shadow.mapSize.set(2048,2048); key.shadow.radius = 6; key.shadow.bias = -0.0004;
+key.castShadow = true; key.shadow.mapSize.set(PHONE ? 1024 : 2048, PHONE ? 1024 : 2048); key.shadow.radius = 6; key.shadow.bias = -0.0004;
 Object.assign(key.shadow.camera, { left:-5, right:5, top:5, bottom:-5, near:1, far:25 });
 const rim = new THREE.DirectionalLight(0xdfe8ff, 2.2); rim.position.set(-5,5,-7); scene.add(rim);   // luz de recorte nas bordas do metal
 const fillL = new THREE.DirectionalLight(0xffffff, .35); fillL.position.set(6,2,6); scene.add(fillL);
@@ -3677,8 +3680,8 @@ function start(){
     if (first) smoothF = fTarget;
     else {
       const d = fTarget - smoothF;
-      const maxV = 0.38 + Math.abs(d) * 0.35;                  // etapas por segundo (acelera só se estiver muito atrás)
-      const step = d * (1 - Math.exp(-dt * 2.6));
+      const maxV = PHONE ? 1.1 + Math.abs(d) * 1.2 : 0.38 + Math.abs(d) * 0.35;   // etapas por segundo (no celular acompanha a rolagem mais de perto)
+      const step = d * (1 - Math.exp(-dt * (PHONE ? 5 : 2.6)));
       smoothF += Math.sign(step) * Math.min(Math.abs(step), maxV * dt);
       if (Math.abs(d) < 0.0005) smoothF = fTarget;
     }
@@ -3704,7 +3707,7 @@ function start(){
       const tEl = stageEl.querySelector('.cf-title.on'), chips = document.getElementById('cf-chips');
       const st = ((A.street||0)*(1-t) + (B.street||0)*t);
       let top = tEl ? tEl.getBoundingClientRect().bottom - cr.top + 14 : ch*.45, bot = chips ? chips.getBoundingClientRect().top - cr.top - 10 : ch - 70;
-      if (st > .5){ top = 64; bot = ch*.52; }                                   // cena da rua: texto embaixo, modelo em cima
+      if (st > .5){ top = 70; bot = ch*.46; }                                   // cena da rua: texto embaixo, modelo em cima
       top = Math.min(top, ch - 220); const reg = Math.max(180, bot - top);
       if (!mobFit.r){ mobFit.c = top + reg/2; mobFit.r = reg; }
       mobFit.c += ((top + reg/2) - mobFit.c) * Math.min(1, dt*6); mobFit.r += (reg - mobFit.r) * Math.min(1, dt*6);
@@ -4497,7 +4500,7 @@ setInterval(()=&gt;$(&#x27;#pb&#x27;).classList.contains(&#x27;o&#x27;)&amp;&amp
     <header class="cp-cab">
       <div class="cp-eyebrow">Comparativo</div>
       <h2><em>Bueiro tradicional</em> <span>x</span> Smart Drainage</h2>
-      <p>O bueiro comum só reage quando o problema já aconteceu. O Smart Drainage percebe a chuva, segura o lixo e avisa a equipe antes do alagamento.</p>
+      <p>O bueiro comum só reage quando o problema já aconteceu. O Smart Drainage percebe a chuva, retém o lixo e avisa a equipe antes do alagamento.</p>
     </header>
 
     <div class="cp-tab" id="cpTab">
