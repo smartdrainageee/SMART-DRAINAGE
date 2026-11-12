@@ -3088,7 +3088,11 @@ function run(){
   // prende a rolagem só na primeira vez, até metade do alagamento (t = 17 s)
   const LOCK_T = 17, hint = document.getElementById('lock2'), root = document.documentElement;
   const tp = document.getElementById('tapes2');
-  const targetY = () => Math.max(0, Math.round(tp.getBoundingClientRect().top + scrollY - innerHeight*.09));   // fitas no topo, cena logo abaixo
+  const docY = el => { let y = 0; while (el){ y += el.offsetTop; el = el.offsetParent; } return y; };      // posição no documento, sem influência de transform
+  const targetY = () => Math.max(0, Math.round(docY(tp) - innerHeight*.09));   // fitas no topo, cena logo abaixo
+  const holdPos = () => { if (locked && Math.abs(scrollY - targetY()) > 1) scrollTo({ top:targetY(), behavior:'instant' }); };
+  addEventListener('scroll', holdPos, { passive:true });
+  setInterval(holdPos, 200);
   let locked = false, released = false, snapping = false;
   const setLock = on => { locked = on; root.style.overflow = on ? 'hidden' : ''; document.body.style.overflow = on ? 'hidden' : ''; if (hint) hint.classList.toggle('sx-on', on); };
   addEventListener('resize', () => { if (locked) scrollTo({ top:targetY(), behavior:'instant' }); });
@@ -6512,6 +6516,41 @@ setInterval(()=&gt;$(&#x27;#pb&#x27;).classList.contains(&#x27;o&#x27;)&amp;&amp
       var d=Math.hypot(gx-sx,gy-sy);if(d>R)continue;var k=1-d/R;g.globalAlpha=k*.55*forca;g.fillStyle=k>.55?'#FF6A13':'#ffffff';g.fillRect(gx-1,gy-1,2,2)}
     g.globalAlpha=1;
   })();
+})();
+</script>
+<style id="sdp-css">
+html{scrollbar-width:none}html::-webkit-scrollbar,body::-webkit-scrollbar{width:0;height:0}
+#sdp{position:fixed;right:10px;top:50%;height:clamp(180px,40vh,360px);transform:translateY(-50%);width:14px;z-index:1001;display:flex;justify-content:center;touch-action:none;opacity:0;transition:opacity .4s ease}
+#sdp.on{opacity:1}
+#sdp .k{position:relative;width:5px;height:100%;border-radius:99px;background:rgba(255,255,255,.14);box-shadow:0 0 0 1px rgba(0,0,0,.35);transition:width .2s ease;overflow:visible}
+#sdp:hover .k,#sdp.drag .k{width:9px}
+#sdp .f{position:absolute;left:0;right:0;top:0;height:0;border-radius:99px;background:rgba(255,106,26,.35)}
+#sdp .t{position:absolute;left:-1px;right:-1px;top:0;height:44px;border-radius:99px;background:#ff6a1a;box-shadow:0 0 12px rgba(255,106,26,.55);cursor:grab}
+#sdp.drag .t{cursor:grabbing;background:#ff7f3a}
+#sdp .p{position:absolute;right:20px;top:0;padding:3px 8px;border-radius:99px;background:rgba(0,0,0,.75);color:#ff8a47;font:700 11px 'Space Mono',monospace;letter-spacing:.06em;opacity:0;transition:opacity .2s ease;pointer-events:none;white-space:nowrap}
+#sdp:hover .p,#sdp.drag .p{opacity:1}
+@media (max-width:820px){#sdp{right:3px;width:10px;height:clamp(140px,32vh,260px)}#sdp .k{width:3px}}
+</style>
+<div id="sdp" aria-hidden="true"><div class="k"><i class="f"></i><b class="t"></b><span class="p">0%</span></div></div>
+<script>
+(function(){
+  var bar=document.getElementById('sdp'),k=bar.firstChild,f=k.querySelector('.f'),t=k.querySelector('.t'),p=k.querySelector('.p'),root=document.documentElement;
+  var locked=function(){return root.style.overflow==='hidden'||root.classList.contains('hb-trava')};
+  var M=function(){var h=root.scrollHeight,vh=innerHeight;return{h:h,vh:vh,max:Math.max(1,h-vh),tr:k.clientHeight}};
+  function upd(){
+    var m=M(); if(m.h<=m.vh+4){bar.classList.remove('on');return} bar.classList.add('on');
+    var th=Math.max(32,m.tr*m.vh/m.h),y=Math.min(1,Math.max(0,scrollY/m.max)),top=(m.tr-th)*y;
+    t.style.height=th+'px';t.style.transform='translateY('+top+'px)';f.style.height=(top+th/2)+'px';
+    p.textContent=Math.round(y*100)+'%';p.style.transform='translateY('+(top+th/2-10)+'px)';
+  }
+  addEventListener('scroll',function(){requestAnimationFrame(upd)},{passive:true});addEventListener('resize',upd);
+  if('ResizeObserver' in window)new ResizeObserver(upd).observe(document.body);
+  setInterval(upd,1500);upd();
+  var sy=0,ss=0,drag=false;
+  t.addEventListener('pointerdown',function(e){if(locked())return;drag=true;sy=e.clientY;ss=scrollY;bar.classList.add('drag');t.setPointerCapture(e.pointerId);e.preventDefault()});
+  t.addEventListener('pointermove',function(e){if(!drag||locked())return;var m=M(),th=t.offsetHeight;scrollTo({top:ss+(e.clientY-sy)*m.max/Math.max(1,m.tr-th),behavior:'instant'})});
+  var end=function(){drag=false;bar.classList.remove('drag')};t.addEventListener('pointerup',end);t.addEventListener('pointercancel',end);
+  k.addEventListener('pointerdown',function(e){if(e.target===t||locked())return;var m=M(),r=k.getBoundingClientRect(),y=(e.clientY-r.top)/r.height;scrollTo({top:y*m.max,behavior:'smooth'})});
 })();
 </script>
 </body>
